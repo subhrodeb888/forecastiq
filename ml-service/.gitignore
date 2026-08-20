@@ -1,0 +1,25 @@
+# virtual environment
+.venv/
+venv/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# local environment
+.env
+.env.*
+!.env.example
+
+# os
+.DS_Store
+
+# training artifacts
+artifacts/

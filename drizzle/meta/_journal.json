@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1786079800316,
+      "tag": "0000_forecast-runs-and-bounds",
+      "breakpoints": true
+    }
+  ]
+}

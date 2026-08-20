@@ -1,0 +1,28 @@
+# Render Blueprint for the ForecastIQ ML service (FastAPI).
+# The Next.js app deploys separately to Vercel and is intentionally NOT here.
+services:
+  - type: web
+    name: forecastiq-ml
+    runtime: python
+    # This repo is a monorepo; the FastAPI service lives in ml-service/.
+    rootDir: ml-service
+    buildCommand: pip install -r requirements.txt
+    # ASGI entrypoint is main:app; Render injects $PORT.
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      # Pin to the locally tested interpreter; all pinned deps ship cp313 wheels.
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: MODEL_ARTIFACTS_DIR
+        value: artifacts
+      # Secrets / environment-specific URLs are set in the Render dashboard,
+      # never committed:
+      - key: DATABASE_URL # production Neon PostgreSQL URL
+        sync: false
+      - key: CORS_ORIGINS # production Vercel frontend URL
+        sync: false
