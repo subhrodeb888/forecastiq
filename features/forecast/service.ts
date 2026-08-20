@@ -61,10 +61,14 @@ export async function generateForecastForProduct(
     horizon_days: params.horizonDays,
     include_intervals: true,
   };
+
   const response =
     params.method === "trained"
       ? await mlClient.predict(request, params.requestId)
-      : await mlClient.forecast({ ...request, model: "auto" }, params.requestId);
+      : await mlClient.forecast(
+          { ...request, model: "auto" },
+          params.requestId,
+        );
 
   const runId = await saveForecastRun(product.id, response, params.userId);
 

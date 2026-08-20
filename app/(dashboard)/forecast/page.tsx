@@ -6,6 +6,7 @@ import { ForecastControls } from "@/features/forecast/components/forecast-contro
 import { ForecastHistory } from "@/features/forecast/components/forecast-history";
 import { ForecastTable } from "@/features/forecast/components/forecast-table";
 import {
+  getDailySalesHistory,
   getForecastRuns,
   getStoredForecasts,
   listForecastProducts,
@@ -15,19 +16,25 @@ interface ForecastPageProps {
   searchParams: Promise<{ product?: string | string[] }>;
 }
 
-export default async function ForecastPage({ searchParams }: ForecastPageProps) {
+export default async function ForecastPage({
+  searchParams,
+}: ForecastPageProps) {
   const { product: productParam } = await searchParams;
-  const productId = Array.isArray(productParam) ? productParam[0] : productParam;
+  const productId = Array.isArray(productParam)
+    ? productParam[0]
+    : productParam;
 
   const products = await listForecastProducts();
-  const selectedProduct = products.find((product) => product.id === productId) ?? null;
+  const selectedProduct =
+    products.find((product) => product.id === productId) ?? null;
 
-  const [points, runs] = selectedProduct
+  const [points, runs, salesHistory] = selectedProduct
     ? await Promise.all([
         getStoredForecasts(selectedProduct.id),
         getForecastRuns(selectedProduct.id),
+        getDailySalesHistory(selectedProduct.id),
       ])
-    : [[], []];
+    : [[], [], []];
 
   return (
     <div className="space-y-6">
@@ -43,6 +50,7 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
         key={selectedProduct?.id ?? "none"}
         products={products}
         selectedProduct={selectedProduct}
+        salesHistoryDays={salesHistory.length}
       />
 
       {!selectedProduct ? (
@@ -64,7 +72,9 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
               <section className="rounded-xl border bg-white p-6 shadow-sm">
                 <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
                   <h2 className="text-lg font-semibold">Forecast outlook</h2>
-                  <span className="text-sm text-slate-500">{selectedProduct.name}</span>
+                  <span className="text-sm text-slate-500">
+                    {selectedProduct.name}
+                  </span>
                 </div>
                 <ForecastChart points={points} />
               </section>

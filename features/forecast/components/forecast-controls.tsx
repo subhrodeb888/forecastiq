@@ -1,14 +1,11 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
-
 import { useRouter } from "next/navigation";
-
 import { AlertCircle, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 
 import { humanizeToken } from "@/lib/format";
 import { FORECAST_HORIZONS } from "@/lib/validations/forecast";
-
 import { ProductCombobox } from "@/components/product-combobox";
 
 import { requestForecastAction } from "../actions";
@@ -17,16 +14,21 @@ import type { ForecastProductOption } from "../types";
 interface ForecastControlsProps {
   products: ForecastProductOption[];
   selectedProduct: ForecastProductOption | null;
+  salesHistoryDays: number;
 }
 
-/**
- * Forecast request form: searchable product select (synced to the
- * `?product=` URL param), horizon selector and the generate button. Handles
- * the loading, error and success states of the server action.
- */
-export function ForecastControls({ products, selectedProduct }: ForecastControlsProps) {
+export function ForecastControls({
+  products,
+  selectedProduct,
+  salesHistoryDays,
+}: ForecastControlsProps) {
+  const MIN_HISTORY_DAYS = 8;
+  const hasEnoughHistory = salesHistoryDays >= MIN_HISTORY_DAYS;
   const router = useRouter();
-  const [state, formAction, isPending] = useActionState(requestForecastAction, null);
+  const [state, formAction, isPending] = useActionState(
+    requestForecastAction,
+    null,
+  );
   const [isNavPending, startNavTransition] = useTransition();
 
   const selectProduct = (product: ForecastProductOption) => {
@@ -41,10 +43,17 @@ export function ForecastControls({ products, selectedProduct }: ForecastControls
         action={formAction}
         className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end"
       >
-        <input type="hidden" name="productId" value={selectedProduct?.id ?? ""} />
+        <input
+          type="hidden"
+          name="productId"
+          value={selectedProduct?.id ?? ""}
+        />
 
         <div>
-          <span className="mb-2 block text-sm font-medium text-slate-700">Product</span>
+          <span className="mb-2 block text-sm font-medium text-slate-700">
+            Product
+          </span>
+
           <ProductCombobox
             products={products}
             value={selectedProduct}
@@ -61,6 +70,7 @@ export function ForecastControls({ products, selectedProduct }: ForecastControls
           >
             Horizon
           </label>
+
           <select
             id="horizonDays"
             name="horizonDays"
@@ -78,7 +88,9 @@ export function ForecastControls({ products, selectedProduct }: ForecastControls
 
         <button
           type="submit"
-          disabled={!selectedProduct || isPending}
+          disabled={
+            !selectedProduct || !hasEnoughHistory || isPending || isNavPending
+          }
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? (
@@ -94,6 +106,17 @@ export function ForecastControls({ products, selectedProduct }: ForecastControls
           )}
         </button>
       </form>
+
+      {selectedProduct && !hasEnoughHistory && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-medium">Insufficient sales history</p>
+          <p className="mt-0.5">
+            This product has {salesHistoryDays} day
+            {salesHistoryDays === 1 ? "" : "s"} of sales history. At least{" "}
+            {MIN_HISTORY_DAYS} days are required to generate a forecast.
+          </p>
+        </div>
+      )}
 
       {state && !state.ok && (
         <div
@@ -116,10 +139,12 @@ export function ForecastControls({ products, selectedProduct }: ForecastControls
           <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
           <p>
             Forecast generated with{" "}
-            <span className="font-medium">{humanizeToken(state.data.model)}</span> ·{" "}
-            {state.data.horizonDays}-day horizon · confidence{" "}
-            {Math.round(state.data.confidenceScore)}% · {state.data.storedPoints} points
-            saved.
+            <span className="font-medium">
+              {humanizeToken(state.data.model)}
+            </span>{" "}
+            · {state.data.horizonDays}-day horizon · confidence{" "}
+            {Math.round(state.data.confidenceScore)}% ·{" "}
+            {state.data.storedPoints} points saved.
           </p>
         </div>
       )}

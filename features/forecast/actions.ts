@@ -54,7 +54,8 @@ export async function requestForecastAction(
   }
 
   // Forward the inbound request id so ML service logs correlate with ours.
-  const requestId = (await headers()).get("x-request-id") ?? crypto.randomUUID();
+  const requestId =
+    (await headers()).get("x-request-id") ?? crypto.randomUUID();
 
   try {
     const data = await generateForecastForProduct({
@@ -67,13 +68,39 @@ export async function requestForecastAction(
     revalidatePath(`/products/${parsed.data.productId}`);
     return { ok: true, data };
   } catch (error) {
-    if (error instanceof MLServiceError || error instanceof ForecastServiceError) {
-      return { ok: false, error: { code: error.code, message: error.message } };
+    if (
+      error instanceof MLServiceError ||
+      error instanceof ForecastServiceError
+    ) {
+      if (
+        error instanceof MLServiceError &&
+        error.code === "validation_error"
+      ) {
+        return {
+          ok: false,
+          error: {
+            code: error.code,
+            message:
+              "This product does not have enough sales history to generate a forecast.",
+          },
+        };
+      }
+
+      return {
+        ok: false,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      };
     }
     console.error("forecast generation failed", error);
     return {
       ok: false,
-      error: { code: "internal_error", message: "Forecast generation failed unexpectedly." },
+      error: {
+        code: "internal_error",
+        message: "Forecast generation failed unexpectedly.",
+      },
     };
   }
 }
