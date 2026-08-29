@@ -53,6 +53,11 @@ async function clear() {
   await db.delete(schema.products);
   await db.delete(schema.suppliers);
   await db.delete(schema.categories);
+  // Keep the demo user so demo login still works after re-seed.
+  // Only delete it if we also delete real users — but since there is no
+  // separate user-ownership layer this is safe.
+  await db.delete(schema.accounts);
+  await db.delete(schema.users);
   console.log("✅ Cleared");
 }
 
@@ -60,6 +65,14 @@ async function clear() {
 
 async function seed() {
   await clear();
+
+  /* ── Demo user ── */
+  await db.insert(schema.users).values({
+    id: "demo-user-fiq",
+    name: "Demo User",
+    email: "demo@forecastiq.app",
+  });
+  console.log("👤 Demo user created");
 
   /* ── Categories ── */
   const cats = await db
